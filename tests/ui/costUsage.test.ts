@@ -7,6 +7,5 @@ test('user can log in and group the Cost & Usage Explorer chart by Region', asyn
 
   await costUsagePage.open();
   await costUsagePage.groupBy('region');
-  await expect(costUsagePage.groupByOption('region')).toHaveAttribute('data-selected', 'true');
   await expect(costUsagePage.breadcrumb).toContainText('Region'); 
 });

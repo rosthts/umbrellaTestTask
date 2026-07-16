@@ -29,6 +29,10 @@ Playwright test project for the Umbrella FinOps platform (`https://dev.umbrellac
    npm run report     # open the last HTML report
    ```
 
+## CI
+
+`.github/workflows/playwright.yml` runs the full suite on every push/PR to `main` (and on manual dispatch), and uploads the HTML report as a build artifact. It needs two repo secrets set under **Settings → Secrets and variables → Actions**: `USER_EMAIL` and `USER_PASSWORD` (the same shared dev-account credentials as in your local `.env`). `BASE_URL`/`API_BASE_URL` aren't secrets — they're set directly in the workflow.
+
 ## Project structure
 
 ```
@@ -87,5 +91,5 @@ Built with **Claude Code** (Anthropic) end-to-end: exploring the app and its API
 - **`GET /api/v1/users/with-roles` returns 500 on the dev environment.** This is the documented public-API "whoami" endpoint; it's marked `test.fixme` with the reason inline rather than deleted, so it's easy to re-enable if the environment gets fixed. The "User role verification" describe block covers the same requirement (current user's email + role) using the already-working `GET /api/v1/users` response instead.
 - **`tokenizer.umbrellacost.io/prod/credentials`** (the public-docs auth endpoint) does not authenticate this dev account — confirmed via curl (`401 Unauthorized`). The dev environment has its own equivalent (`api.dev.umbrellacost.dev/api/v1/users/signin`), which is what the suite uses.
 - **UI suite covers one meaningful journey**, not exhaustive coverage of the Cost & Usage Explorer (grouping only — not date-range picking or every filter combination), given the assignment's scope of a few focused hours.
-- **No CI workflow, Allure reporting, or teardown of created artifacts** — none of the bonus items were implemented; the account isn't mutated by any test (no resources are created), so no teardown was needed.
+- **No teardown of created artifacts** — no test creates any resource in the account (read-only + one intentional negative login), so there's nothing to tear down.
 - **Shared dev account.** No destructive actions were taken against it; the negative-login test only sends a wrong password (no lockout observed), and no other users' data was touched.

@@ -1,10 +1,12 @@
 import { test as base, expect } from '../fixtures';
 import { LoginPage } from '../../src/pages/loginPage';
 import { CostUsagePage } from '../../src/pages/costUsagePage';
+import { AccountPage } from '../../src/pages/accountPage';
 
 type UIFixtures = {
   loginPage: LoginPage;
   costUsagePage: CostUsagePage;
+  accountPage: AccountPage;
   trackPageErrors: void;
 };
 
@@ -14,6 +16,9 @@ export const test = base.extend<UIFixtures>({
   },
   costUsagePage: async ({ page }, use) => {
     await use(new CostUsagePage(page));
+  },
+  accountPage: async ({ page }, use) => {
+    await use(new AccountPage(page));
   },
 
   trackPageErrors: [

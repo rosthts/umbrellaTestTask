@@ -1,8 +1,6 @@
 import type { APIRequestContext } from '@playwright/test';
 import type { Login } from './types';
 
-// Constant per the Umbrella Cost API contract (docs.umbrellacost.io) — not a secret,
-// not environment-specific, so it's a code constant rather than an env var.
 export const DEFAULT_API_KEY = '-1:-1:-1';
 
 export class AuthApiClient {

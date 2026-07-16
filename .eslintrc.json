@@ -1,0 +1,29 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint", "prettier"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "ignorePatterns": [".eslintrc.json", "playwright-report", "test-results"],
+  "rules": {
+    "no-console": 1,
+    "no-empty-pattern": "off",
+    "@typescript-eslint/await-thenable": "error",
+    "@typescript-eslint/consistent-type-imports": "error",
+    "@typescript-eslint/no-floating-promises": 1,
+    "@typescript-eslint/no-namespace": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ]
+  }
+}

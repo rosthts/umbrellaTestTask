@@ -1,10 +1,9 @@
-import { APIRequestContext, expect } from "@playwright/test";
-import { AuthApiClient } from "./authApiClient";
-import { Login } from "./types";
-import { ResponseChecks } from "../common/responseChecks";
+import type { APIRequestContext } from '@playwright/test';
+import { AuthApiClient } from './authApiClient';
+import type { Login } from './types';
+import { ResponseChecks } from '../common/responseChecks';
 
 export class AuthService {
-
   readonly client: AuthApiClient;
 
   constructor(request: APIRequestContext) {
@@ -15,9 +14,7 @@ export class AuthService {
     const response = await this.client.signIn(data);
     await ResponseChecks.assertStatus(response, expectedStatus);
     const body = await response.json();
-    return expectedStatus === 200
-      ? { jwtToken: body.jwtToken, userKey: body.username }
-      : body;
+    return expectedStatus === 200 ? { jwtToken: body.jwtToken, userKey: body.username } : body;
   }
 
   async getAccountApiKey(auth: { jwtToken: string; userKey: string }, expectedStatus = 200) {

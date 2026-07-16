@@ -1,6 +1,6 @@
-import { test as base } from "../fixtures";
-import { LoginPage } from "../../src/pages/loginPage";
-import { CostUsagePage } from "../../src/pages/costUsagePage";
+import { test as base } from '../fixtures';
+import { LoginPage } from '../../src/pages/loginPage';
+import { CostUsagePage } from '../../src/pages/costUsagePage';
 
 type UIFixtures = {
   loginPage: LoginPage;
@@ -16,4 +16,4 @@ export const test = base.extend<UIFixtures>({
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect } from '@playwright/test';

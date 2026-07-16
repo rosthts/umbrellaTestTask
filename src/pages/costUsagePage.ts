@@ -1,20 +1,18 @@
-import { Locator, Page } from "@playwright/test";
-import { BasePage } from "./basePage";
+import type { Locator, Page } from '@playwright/test';
+import { BasePage } from './basePage';
 
 export class CostUsagePage extends BasePage {
   private readonly costUsageMenuButton: Locator;
   private readonly costUsageExplorerButton: Locator;
   private readonly groupByTrigger: Locator;
   private readonly applyButton: Locator;
-  private readonly calendarIcon: Locator;
 
   constructor(page: Page) {
     super(page);
     this.costUsageMenuButton = this.byId('sideBarItemTitle-costAndUsage');
     this.costUsageExplorerButton = this.byId('innerSideBarItemTitle-costAndUsageExplorer');
     this.groupByTrigger = this.byId('primaryGroupBy');
-    this.applyButton = this.byId('apply-filters-button'); // або getByRole('button', {name: 'Apply'}), якщо automation-id нема
-    this.calendarIcon = this.byId('???');
+    this.applyButton = this.byId('apply-filters-button');
   }
 
   async open() {
@@ -28,7 +26,7 @@ export class CostUsagePage extends BasePage {
     await this.applyButton.click();
   }
 
-groupByOption(optionKey: string) {
+  groupByOption(optionKey: string) {
     return this.byId(`group-by-option-${optionKey}`);
   }
 

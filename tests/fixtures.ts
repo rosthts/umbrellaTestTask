@@ -1,5 +1,5 @@
-import { test as base } from "@playwright/test";
-import { getApiCredentials } from "../src/api/common/env";
+import { test as base } from '@playwright/test';
+import { getApiCredentials } from '../src/api/common/env';
 
 type CredentialsFixture = {
   credentials: { username: string; password: string };
@@ -11,4 +11,4 @@ export const test = base.extend<CredentialsFixture>({
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect } from '@playwright/test';

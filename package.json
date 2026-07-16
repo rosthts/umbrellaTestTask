@@ -6,7 +6,12 @@
     "test": "playwright test",
     "test:api": "playwright test --project=api",
     "test:ui": "playwright test --project=ui",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "lint:check": "eslint --max-warnings=0 --ignore-path .gitignore \"**/**/*.ts\"",
+    "lint:fix": "npm run lint:check -- --fix",
+    "format:check": "prettier --ignore-path .gitignore --list-different \"**/**/*.{ts,json,md}\"",
+    "format:fix": "npm run format:check -- --write",
+    "format:all": "npm run format:fix && npm run lint:fix"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +20,12 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.1",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
     "dotenv": "^17.4.2",
-    "typescript": "^7.0.2"
+    "eslint": "^8.57.1",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.9.5",
+    "typescript": "^5.9.3"
   }
 }

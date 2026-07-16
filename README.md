@@ -74,6 +74,7 @@ tests/
 - **`BasePage.byId()`** matches `data-automation-id`, `automation-id`, _and_ plain `id`, since the app inconsistently uses more than one convention. It also filters to `:visible` matches — the Group By dropdown keeps all tab panels (Cloud/K8s/Custom) mounted in the DOM simultaneously, so an unfiltered selector matches multiple hidden duplicates.
 - **One shared `credentials` fixture** (`tests/fixtures.ts`) that both `tests/api/fixtures.ts` and `tests/ui/fixtures.ts` extend, so `.env` credentials are read from exactly one place.
 - **Chromium only.** Installed and run against a single browser to keep the suite fast for the assignment's scope; the config is a one-line change to add more projects if needed.
+- **Console/network error tracking (bonus).** An auto-fixture (`tests/ui/fixtures.ts`) fails any UI test on uncaught JS exceptions or 5xx responses, and attaches any `console.error` output to the report without failing — the page loads third-party scripts (GTM, FullStory) that can log unrelated warnings, so only failing on genuinely severe signals avoids false negatives.
 
 ## What I verified manually
 

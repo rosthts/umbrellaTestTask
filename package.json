@@ -11,7 +11,9 @@
     "lint:fix": "npm run lint:check -- --fix",
     "format:check": "prettier --ignore-path .gitignore --list-different \"**/**/*.{ts,json,md}\"",
     "format:fix": "npm run format:check -- --write",
-    "format:all": "npm run format:fix && npm run lint:fix"
+    "format:all": "npm run format:fix && npm run lint:fix",
+    "allure:generate": "allure generate ./allure-results --clean -o ./allure-report",
+    "allure:open": "allure open ./allure-report"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,8 @@
     "@types/node": "^26.1.1",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
+    "allure-commandline": "^2.43.0",
+    "allure-playwright": "^3.10.2",
     "dotenv": "^17.4.2",
     "eslint": "^8.57.1",
     "eslint-plugin-prettier": "^5.5.6",

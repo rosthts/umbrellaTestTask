@@ -5,7 +5,7 @@ export class BasePage {
 
   protected byId(id: string) {
     return this.page.locator(
-      `[data-automation-id="${id}"]:visible, [automation-id="${id}"]:visible, [id="${id}"]:visible `,
+      `[data-automation-id="${id}"]:visible, [automation-id="${id}"]:visible, [id="${id}"]:visible`,
     );
   }
 }

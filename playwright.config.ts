@@ -5,10 +5,11 @@ dotenv.config();
 
 export default defineConfig({
   testDir: './tests',
+  workers: 4,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  retries: process.env.CI ? 2 : 0,
+  reporter: [['list'], ['html', { open: 'never' }], ['allure-playwright']],
 
   use: {
     baseURL: process.env.BASE_URL ?? 'https://dev.umbrellacost.dev',

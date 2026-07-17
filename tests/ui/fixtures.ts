@@ -24,7 +24,7 @@ export const test = base.extend<UIFixtures>({
   trackPageErrors: [
     async ({ page }, use, testInfo) => {
       const criticalErrors: string[] = [];
-      const consoleWarnings: string[] = [];
+      const consoleErrors: string[] = [];
 
       page.on('pageerror', (err) => {
         criticalErrors.push(`Uncaught exception: ${err.message}`);
@@ -36,15 +36,15 @@ export const test = base.extend<UIFixtures>({
       });
       page.on('console', (msg) => {
         if (msg.type() === 'error') {
-          consoleWarnings.push(msg.text());
+          consoleErrors.push(msg.text());
         }
       });
 
       await use();
 
-      if (consoleWarnings.length) {
+      if (consoleErrors.length) {
         await testInfo.attach('console-errors', {
-          body: consoleWarnings.join('\n'),
+          body: consoleErrors.join('\n'),
           contentType: 'text/plain',
         });
       }

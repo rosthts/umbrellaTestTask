@@ -1,9 +1,9 @@
 import { expect, test } from './fixtures';
 
 test('user can log in and group the Cost & Usage Explorer chart by Region', async ({
+  page,
   loginPage,
   costUsagePage,
-  page,
   credentials: { username, password },
 }) => {
   await loginPage.goto();

@@ -4,7 +4,7 @@ import type { Login } from './types';
 import { ResponseChecks } from '../common/responseChecks';
 
 export class AuthService {
-  readonly client: AuthApiClient;
+  private readonly client: AuthApiClient;
 
   constructor(request: APIRequestContext) {
     this.client = new AuthApiClient(request);

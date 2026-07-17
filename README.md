@@ -1,96 +1,117 @@
 # Umbrella QA Automation — Playwright E2E Suite
 
-Playwright test project for the Umbrella FinOps platform (`https://dev.umbrellacost.dev`), covering:
+Playwright test project for the Umbrella FinOps platform (`https://dev.umbrellacost.dev`).
 
-- **API suite** — authentication, API-key generation flow, user-role/whoami verification, and a negative case.
-- **UI suite** — login and a Cost & Usage Explorer journey (grouping the chart, asserting the resulting page state).
+- **API suite** — auth, API-key generation flow, user-role/whoami check, and a negative case.
+- **UI suite** — login and a Cost & Usage Explorer journey, plus an RBAC check.
 
 ## Setup
 
 1. Clone the repo.
-2. `cp .env.example .env` and fill in the credentials:
+2. Copy `.env.example` to `.env` and fill in the credentials:
    ```
    BASE_URL=https://dev.umbrellacost.dev
    API_BASE_URL=https://api.dev.umbrellacost.dev
    USER_EMAIL=<shared dev account email>
    USER_PASSWORD=<shared dev account password>
    ```
-   `.env` is gitignored — credentials are never committed. `API_BASE_URL` points at the dev API host (`api.dev.umbrellacost.dev`), which is a separate deployment from the public API described in the official docs (`api.umbrellacost.io`) — see "Known limitations" below.
-3. Install dependencies and the browser binary:
+   `.env` is gitignored, credentials never get committed. `API_BASE_URL` is the dev API host — it's a different deployment from the public API in the official docs (`api.umbrellacost.io`), see "Known limitations".
+3. Install everything:
    ```bash
    npm install
    npx playwright install chromium --with-deps
    ```
-4. Run everything:
+4. Run it:
    ```bash
-   npm test          # api + ui projects
+   npm test          # api + ui
    npm run test:api  # API suite only
-   npm run test:ui    # UI suite only
-   npm run report     # open the last HTML report
+   npm run test:ui   # UI suite only
+   npm run report    # open the last Playwright HTML report
    ```
+5. Allure report is optional and needs a local Java runtime (JRE 8+):
+   ```bash
+   npm run allure:generate
+   npm run allure:open
+   ```
+
+## Code quality
+
+```bash
+npm run lint:check    # ESLint, zero warnings allowed
+npm run lint:fix
+npm run format:check  # Prettier
+npm run format:fix
+npm run format:all    # both fixes
+```
 
 ## CI
 
-`.github/workflows/playwright.yml` runs the full suite on every push/PR to `main` (and on manual dispatch), and uploads the HTML report as a build artifact. It needs two repo secrets set under **Settings → Secrets and variables → Actions**: `USER_EMAIL` and `USER_PASSWORD` (the same shared dev-account credentials as in your local `.env`). `BASE_URL`/`API_BASE_URL` aren't secrets — they're set directly in the workflow.
+`.github/workflows/playwright.yml` runs lint, format check, and the tests on every push/PR to `main` (and manually), and uploads the Playwright and Allure reports as artifacts. Needs two repo secrets: `USER_EMAIL` and `USER_PASSWORD` (Settings → Secrets and variables → Actions) — same values as your local `.env`.
 
 ## Project structure
 
 ```
 src/
   api/
-    apiManager.ts        # thin composition root — one property per domain, no business logic
+    apiManager.ts        # composition root — one property per domain, no logic of its own
     auth/
-      authApiClient.ts   # Controller: raw HTTP calls, returns APIResponse as-is (no assertions)
-      authService.ts      # Service: assert + parse, business flow (login, api-key, whoami)
-      types.ts            # wire-format request/response types per endpoint
+      authApiClient.ts   # raw HTTP calls, returns the response as-is, no assertions
+      authService.ts     # assert + parse, the actual login/api-key/whoami flow
+      types.ts           # wire-format request/response types
     common/
-      env.ts              # required-env-var helpers
-      responseChecks.ts   # shared status-code assertion helper
+      env.ts             # required-env-var helpers
+      responseChecks.ts  # shared status-code assertion
   pages/
-    basePage.ts           # shared byId() locator helper (handles both automation-id conventions)
+    basePage.ts          # shared byId() locator helper
     loginPage.ts
-    costUsagePage.ts       # Page Objects: locators + actions only, no assertions
+    costUsagePage.ts
+    accountPage.ts        # Account → Roles & Users, used by the RBAC test
 
 tests/
-  fixtures.ts              # shared `credentials` fixture (used by both api/ and ui/ fixtures)
+  fixtures.ts             # shared `credentials` fixture
   api/
-    fixtures.ts            # apiManager / authToken / accountApiKey fixtures
+    fixtures.ts
     auth/
-      auth.test.ts          # login: positive + negative (invalid password → 403)
-      apiKey.test.ts        # account-api-key generation flow
-      whoami.test.ts        # role verification (+ documented with-roles limitation, see below)
+      auth.test.ts        # login: positive + negative (wrong password → 403)
+      apiKey.test.ts      # account-api-key generation flow
+      whoami.test.ts      # role check (+ a documented limitation, see below)
   ui/
-    fixtures.ts             # loginPage / costUsagePage fixtures
-    costUsage.test.ts        # login → Cost & Usage Explorer → group by Region → assert state
+    fixtures.ts           # loginPage/costUsagePage/accountPage fixtures + error tracking
+    costUsage.test.ts     # login → Cost & Usage Explorer → group by Region → assert
+    rbac.test.ts          # Editor role can't manage roles/users (bonus)
 ```
 
 ## Design choices
 
-- **Controller vs. Service split (API).** `AuthApiClient` methods return the raw Playwright `APIResponse` — no `expect`, no thrown errors. `AuthService` methods do the assertion + parsing. This is what lets the _same_ client method serve both positive and negative tests: a negative test needs the raw status code, not an exception thrown before it can inspect anything.
-- **`expectedStatus` parameter instead of a separate "negative" method.** `AuthService.signIn(data, expectedStatus = 200)` asserts against whatever status the caller expects, and returns the clean success shape only when `expectedStatus === 200` (otherwise the raw error body). One method covers both directions of a test instead of two near-duplicate ones.
-- **`ApiManager` is a pure composition root.** It only holds one `readonly` property per domain (`auth`, and any future domain). All business logic lives in that domain's own `*Service` class, so the manager itself never grows regardless of how many endpoints/domains get added.
-- **Field name remapping at the service boundary.** The `/signin` response has a field literally called `username` that actually holds the Cognito `userKey` (a UUID), not the email. `AuthService.signIn` remaps this to `{ jwtToken, userKey }` so nothing downstream has to know about that wire-format quirk.
-- **Page Objects hold locators + actions; tests hold assertions.** Mirrors the Controller/Service split — `CostUsagePage.groupBy()` performs the action, `costUsagePage.groupByOption(key)` / `.breadcrumb` return locators, and the test file decides what to assert against them.
-- **`BasePage.byId()`** matches `data-automation-id`, `automation-id`, _and_ plain `id`, since the app inconsistently uses more than one convention. It also filters to `:visible` matches — the Group By dropdown keeps all tab panels (Cloud/K8s/Custom) mounted in the DOM simultaneously, so an unfiltered selector matches multiple hidden duplicates.
-- **One shared `credentials` fixture** (`tests/fixtures.ts`) that both `tests/api/fixtures.ts` and `tests/ui/fixtures.ts` extend, so `.env` credentials are read from exactly one place.
-- **Chromium only.** Installed and run against a single browser to keep the suite fast for the assignment's scope; the config is a one-line change to add more projects if needed.
-- **Console/network error tracking (bonus).** An auto-fixture (`tests/ui/fixtures.ts`) fails any UI test on uncaught JS exceptions or 5xx responses, and attaches any `console.error` output to the report without failing — the page loads third-party scripts (GTM, FullStory) that can log unrelated warnings, so only failing on genuinely severe signals avoids false negatives.
+- **Controller/Service split on the API side.** `AuthApiClient` just returns the raw response, no assertions. `AuthService` does the assert + parse. That's what lets the same client method cover both a positive and a negative test — the negative one needs the raw status code, not an exception thrown before it gets to check anything.
+- **`expectedStatus` param instead of a separate method for negative cases.** `signIn(data, expectedStatus = 200)` checks whatever status you pass it, and only returns the clean parsed shape on 200. One method, both directions.
+- **`ApiManager` doesn't do anything itself** — just one property per domain. All the actual logic lives in `AuthService`, so the manager doesn't grow as more endpoints get added.
+- **`signin`'s `username` field is actually the Cognito userKey (a UUID), not the email** — found this out with curl. `AuthService.signIn` renames it to `userKey` so nothing downstream has to remember that.
+- **Page Objects only hold locators and actions, not assertions** — same idea as the Controller/Service split. `groupBy()` does the action, `groupByOption()`/`breadcrumb` return locators, the test decides what to check.
+- **`BasePage.byId()`** matches `data-automation-id`, `automation-id`, or plain `id` — the app uses all three inconsistently. Also filters to visible elements only, since the Group By dropdown keeps every tab's options mounted in the DOM even when hidden.
+- **One `credentials` fixture** shared by both the API and UI fixture files, so there's exactly one place reading `.env`.
+- **Chromium only**, to keep things fast for this assignment's scope.
+- **RBAC test checks two different "disabled" mechanisms.** The "Multi Assignment" button uses a real `disabled` attribute. The "add user" icon is wrapped in a `pointer-events: none` div instead — no `disabled` attribute at all, just CSS (which is inherited, so checking it on the button itself still works).
+- **`AccountPage` goes straight to `/account`** instead of clicking through the profile dropdown, and waits for the roles table to actually render before returning. Both of those were real, reproducible sources of flakiness — the dropdown re-renders async (a notification badge pops in) which detached the element mid-click, and the roles table loads async after the tab switch, which timed out once on a slower CI runner. Took a couple of wrong turns to find both (first assumed it was about running tests in parallel against the shared account, tried a shared-session setup instead) before the actual causes showed up in failure traces.
+- **Allure reporting (bonus)** via `allure-playwright`, alongside the plain HTML reporter.
+- **Console/network error tracking (bonus).** An auto-fixture fails a UI test on uncaught exceptions or 5xx responses, and just attaches `console.error` output to the report without failing on it — the app loads GTM/FullStory scripts that log their own unrelated warnings.
 
-## What I verified manually
+## What I checked by hand
 
-- The full documented Cost API auth flow (`signin` → `users` → forming the `account-api-key`) via curl, against `api.dev.umbrellacost.dev`, before writing any client code — including capturing the real response shapes used to type `authService.ts`/`types.ts`.
-- That `GET /api/v1/users/with-roles` (the documented "Get Users and Roles"/whoami endpoint) returns `500 Internal Server Error` on this dev environment with a correctly-formed token and account-api-key — reproduced independently via curl with fresh credentials, not just inside the test runner.
-- All `data-automation-id` / `automation-id` selectors used in the Page Objects, via browser DevTools, before writing the corresponding Playwright locators.
-- The full `npm test` run (API + UI together) end-to-end, not just each suite in isolation.
+- The whole documented Cost API auth flow (signin → users → account-api-key) with curl against `api.dev.umbrellacost.dev`, before writing any client code.
+- That `GET /api/v1/users/with-roles` (the documented whoami endpoint) returns a 500 on this dev environment — reproduced with curl independently, not just inside the test run.
+- Every `data-automation-id`/`automation-id` selector, in DevTools, before writing the Playwright locator for it.
+- The full `npm test` run end-to-end, several times, not just once and not just each suite separately.
 
 ## AI tools used
 
-Built with **Claude Code** (Anthropic) end-to-end: exploring the app and its API docs, drafting and reviewing the Controller/Service/Page-Object architecture, and pair-writing the fixtures/tests. Test logic and page objects were written by me, with Claude reviewing each file for bugs (wrong headers, wrong URLs, unstable selectors, TS init-order issues) before moving to the next step, and doing the initial API/UI recon (network capture, DevTools attribute discovery) to inform what to build.
+Built with Claude Code end-to-end — exploring the app and API docs, going back and forth on the Controller/Service/Page Object structure, and reviewing each file as I wrote it (wrong headers, wrong URLs, flaky selectors, a couple of real bugs like an unassigned locator and a TS init-order issue). I wrote the actual test code and page objects myself; Claude did the initial API/UI recon (network capture, DevTools digging) and caught most of the bugs above before they became a problem.
 
 ## Known limitations
 
-- **`GET /api/v1/users/with-roles` returns 500 on the dev environment.** This is the documented public-API "whoami" endpoint; it's marked `test.fixme` with the reason inline rather than deleted, so it's easy to re-enable if the environment gets fixed. The "User role verification" describe block covers the same requirement (current user's email + role) using the already-working `GET /api/v1/users` response instead.
-- **`tokenizer.umbrellacost.io/prod/credentials`** (the public-docs auth endpoint) does not authenticate this dev account — confirmed via curl (`401 Unauthorized`). The dev environment has its own equivalent (`api.dev.umbrellacost.dev/api/v1/users/signin`), which is what the suite uses.
-- **UI suite covers one meaningful journey**, not exhaustive coverage of the Cost & Usage Explorer (grouping only — not date-range picking or every filter combination), given the assignment's scope of a few focused hours.
-- **No teardown of created artifacts** — no test creates any resource in the account (read-only + one intentional negative login), so there's nothing to tear down.
-- **Shared dev account.** No destructive actions were taken against it; the negative-login test only sends a wrong password (no lockout observed), and no other users' data was touched.
+- `GET /api/v1/users/with-roles` returns 500 on this dev environment — marked `test.fixme` with the reason inline instead of deleted, so it's easy to turn back on later. The "User role verification" test covers the same thing (current user's email + role) through the already-working `GET /api/v1/users` instead.
+- `tokenizer.umbrellacost.io/prod/credentials` (the public docs' auth endpoint) doesn't authenticate this dev account — confirmed 401 via curl. The dev environment has its own signin endpoint, which the suite uses instead.
+- UI suite covers one Cost & Usage journey and one RBAC check, not exhaustive coverage — given the scope of this assignment.
+- Allure report generation needs a local JRE, which isn't installed here — verified `allure-results/` gets produced correctly, but only saw the actual HTML report via the CI artifact, not locally.
+- No test creates anything in the account, so there's no teardown to write.
+- Shared dev account — nothing destructive happens; the negative login test just sends a wrong password once.
